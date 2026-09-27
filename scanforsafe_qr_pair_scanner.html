@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ScanForSafe – QR Pair Scanner</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Arial, sans-serif;
+    background: #f5f6f8;
+    color: #111827;
+  }
+  .app { max-width: 560px; margin: 0 auto; padding: 18px 14px 32px; }
+  h1 { font-size: 24px; margin: 4px 0 4px; }
+  .sub { color: #6b7280; font-size: 14px; margin-bottom: 16px; }
+  .card {
+    background: white; border-radius: 18px; padding: 16px;
+    margin-bottom: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  }
+  .status {
+    border-radius: 14px; padding: 14px; font-weight: 700;
+    text-align: center; margin-bottom: 14px;
+  }
+  .waiting { background: #eef2ff; color: #3730a3; }
+  .ready { background: #fff7ed; color: #9a3412; }
+  .success { background: #ecfdf5; color: #047857; }
+  .error { background: #fef2f2; color: #b91c1c; }
+  #reader { width: 100%; overflow: hidden; border-radius: 14px; }
+  button {
+    width: 100%; border: 0; border-radius: 12px; padding: 14px;
+    font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer;
+  }
+  .primary { background: #111827; color: white; }
+  .secondary { background: #e5e7eb; color: #111827; }
+  .danger { background: #fee2e2; color: #991b1b; }
+  label { display:block; font-size: 13px; font-weight: 700; margin: 12px 0 6px; }
+  input {
+    width: 100%; padding: 13px; border: 1px solid #d1d5db;
+    border-radius: 10px; font-size: 15px;
+  }
+  .url {
+    word-break: break-all; background: #f9fafb; padding: 10px;
+    border-radius: 9px; font-size: 13px; margin-top: 7px;
+  }
+  .counter { font-size: 30px; font-weight: 800; text-align: center; }
+  .small { font-size: 12px; color: #6b7280; }
+  .row { display:flex; gap:8px; }
+  .row button { flex:1; }
+  .hidden { display:none; }
+  .history-item {
+    padding: 10px 0; border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+  }
+  .ok { color:#047857; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>ScanForSafe QR Pair Scanner</h1>
+  <div class="sub">Heat-press label → Kids badge → exact QR URL comparison · Dynamic quantity</div>
+
+  <div id="status" class="status waiting">Scan or enter the HEAT-PRESS QR first</div>
+
+  <div class="card">
+    <div class="counter"><span id="matched">0</span> matched</div>
+    <div class="small" style="text-align:center;">Successfully matched pairs — no fixed limit</div>
+  </div>
+
+  <div class="card">
+    <div id="reader"></div>
+    <button id="startBtn" class="primary" onclick="startScanner()">Start Camera Scanner</button>
+    <button id="stopBtn" class="secondary hidden" onclick="stopScanner()">Stop Camera</button>
+  </div>
+
+  <div class="card">
+    <label>Manual QR URL / code</label>
+    <input id="manualInput" placeholder="Paste the complete QR URL here">
+    <button class="secondary" onclick="processManual()">Use This QR</button>
+  </div>
+
+  <div id="expectedCard" class="card hidden">
+    <strong>Current heat-press QR</strong>
+    <div id="expectedUrl" class="url"></div>
+    <button class="danger" onclick="resetPair()">Cancel / Scan Another Heat-Press Label</button>
+  </div>
+
+  
+  <div class="card">
+    <strong>Current session</strong>
+    <div class="small" style="margin-top:6px;">
+      There is no 200-item limit. Scan as many heat-press labels as you need.
+      Each successful pair is recorded locally on this iPhone.
+    </div>
+    <div class="row">
+      <button class="secondary" onclick="exportCSV()">Export CSV</button>
+      <button class="secondary" onclick="resetAll()">New Session</button>
+    </div>
+  </div>
+
+<div id="resultCard" class="card hidden">
+    <strong>Last result</strong>
+    <div id="resultText" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card">
+    <strong>Matched history</strong>
+    <div id="history" class="small" style="margin-top:8px;">No matches yet.</div>
+    <button class="secondary" onclick="clearHistory()">Clear History</button>
+  </div>
+</div>
+
+<script>
+const PREFIX = "https://www.scanforsafe.com/scan/";
+const TARGET = null; // Dynamic: no fixed number of heat-press labels
+
+let expectedUrl = null;
+let scanner = null;
+let scannerRunning = false;
+let processing = false;
+let matched = Number(localStorage.getItem("sfs_matched") || 0);
+let history = JSON.parse(localStorage.getItem("sfs_history") || "[]");
+
+document.getElementById("matched").textContent = matched;
+renderHistory();
+
+function normalizeUrl(value) {
+  return (value || "").trim();
+}
+
+function isValidScanUrl(value) {
+  return normalizeUrl(value).startsWith(PREFIX);
+}
+
+function setStatus(text, type) {
+  const el = document.getElementById("status");
+  el.className = "status " + type;
+  el.textContent = text;
+}
+
+function showExpected() {
+  const card = document.getElementById("expectedCard");
+  if (!expectedUrl) {
+    card.classList.add("hidden");
+    return;
+  }
+  card.classList.remove("hidden");
+  document.getElementById("expectedUrl").textContent = expectedUrl;
+}
+
+function handleScan(decodedText) {
+  if (processing) return;
+  processing = true;
+
+  const scanned = normalizeUrl(decodedText);
+
+  // QR must be the ScanForSafe URL. No OCR and no code extraction.
+  if (!isValidScanUrl(scanned)) {
+    setStatus("❌ Not a valid ScanForSafe QR URL", "error");
+    showResult("Rejected: " + scanned);
+    setTimeout(() => processing = false, 1200);
+    return;
+  }
+
+  if (!expectedUrl) {
+    // First scan = heat-press label.
+    expectedUrl = scanned;
+    showExpected();
+    setStatus("Heat-press saved. Now scan the KIDS BADGE QR.", "ready");
+    showResult("Expected heat-press QR:<div class='url'>" + escapeHtml(expectedUrl) + "</div>");
+    setTimeout(() => processing = false, 700);
+    return;
+  }
+
+  // Second scan = kids badge. Exact complete URL comparison.
+  if (scanned === expectedUrl) {
+    matched++;
+    document.getElementById("matched").textContent = matched;
+    localStorage.setItem("sfs_matched", matched);
+
+    const item = {
+      time: new Date().toLocaleString(),
+      url: expectedUrl
+    };
+    history.unshift(item);
+    history = history.slice(0, 10000);
+    localStorage.setItem("sfs_history", JSON.stringify(history));
+    renderHistory();
+
+    setStatus("✅ MATCH — pair completed. Scan the NEXT heat-press label.", "success");
+    showResult(
+      "<div class='ok'>MATCHED</div>" +
+      "<div class='url'>" + escapeHtml(expectedUrl) + "</div>"
+    );
+
+    // Automatically prepare for the next heat-press label.
+    expectedUrl = null;
+    showExpected();
+  } else {
+    setStatus("❌ NO MATCH — scan the correct kids badge again.", "error");
+    showResult(
+      "<strong>Expected:</strong><div class='url'>" + escapeHtml(expectedUrl) + "</div>" +
+      "<strong>Scanned:</strong><div class='url'>" + escapeHtml(scanned) + "</div>"
+    );
+  }
+
+  setTimeout(() => processing = false, 1000);
+}
+
+function processManual() {
+  const value = document.getElementById("manualInput").value;
+  document.getElementById("manualInput").value = "";
+  handleScan(value);
+}
+
+async function startScanner() {
+  if (scannerRunning) return;
+
+  scanner = new Html5Qrcode("reader");
+
+  try {
+    await scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 12,
+        qrbox: { width: 260, height: 260 },
+        aspectRatio: 1.0
+      },
+      (decodedText) => handleScan(decodedText),
+      () => {}
+    );
+
+    scannerRunning = true;
+    document.getElementById("startBtn").classList.add("hidden");
+    document.getElementById("stopBtn").classList.remove("hidden");
+    setStatus(
+      expectedUrl
+        ? "Scan the KIDS BADGE QR"
+        : "Scan the HEAT-PRESS QR",
+      expectedUrl ? "ready" : "waiting"
+    );
+  } catch (err) {
+    setStatus("Camera could not start. Allow camera permission in Safari.", "error");
+    showResult("Camera error: " + err);
+  }
+}
+
+async function stopScanner() {
+  if (!scanner || !scannerRunning) return;
+  try {
+    await scanner.stop();
+    scanner.clear();
+  } catch (e) {}
+  scannerRunning = false;
+  document.getElementById("startBtn").classList.remove("hidden");
+  document.getElementById("stopBtn").classList.add("hidden");
+}
+
+function resetPair() {
+  expectedUrl = null;
+  showExpected();
+  setStatus("Scan or enter the HEAT-PRESS QR first", "waiting");
+  showResult("Current pair cancelled.");
+}
+
+function showResult(html) {
+  document.getElementById("resultCard").classList.remove("hidden");
+  document.getElementById("resultText").innerHTML = html;
+}
+
+function renderHistory() {
+  const el = document.getElementById("history");
+  if (!history.length) {
+    el.textContent = "No matches yet.";
+    return;
+  }
+  el.innerHTML = history.map((x, i) =>
+    "<div class='history-item'><strong>" + (history.length - i) +
+    ".</strong> " + escapeHtml(x.url) +
+    "<br><span class='small'>" + escapeHtml(x.time) + "</span></div>"
+  ).join("");
+}
+
+function clearHistory() {
+  if (!confirm("Clear all locally stored match history and reset the counter?")) return;
+  matched = 0;
+  history = [];
+  localStorage.removeItem("sfs_matched");
+  localStorage.removeItem("sfs_history");
+  document.getElementById("matched").textContent = "0";
+  renderHistory();
+  setStatus("Scan or enter the HEAT-PRESS QR first", "waiting");
+  expectedUrl = null;
+  showExpected();
+}
+
+
+function exportCSV() {
+  if (!history.length) {
+    alert("No matched pairs to export.");
+    return;
+  }
+  const rows = [["Pair Number", "QR URL", "Matched At"]];
+  history.slice().reverse().forEach((x, i) => {
+    rows.push([i + 1, x.url, x.time]);
+  });
+  const csv = rows.map(row => row.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\n");
+  const blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "scanforsafe-qr-matches-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  if (!confirm("Start a new session? This will clear the local match count and history on this iPhone.")) return;
+  matched = 0;
+  history = [];
+  expectedUrl = null;
+  localStorage.removeItem("sfs_matched");
+  localStorage.removeItem("sfs_history");
+  document.getElementById("matched").textContent = "0";
+  document.getElementById("resultCard").classList.add("hidden");
+  showExpected();
+  renderHistory();
+  setStatus("Scan or enter the HEAT-PRESS QR first", "waiting");
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[c]));
+}
+</script>
+</body>
+</html>
