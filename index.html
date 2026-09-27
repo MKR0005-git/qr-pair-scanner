@@ -72,7 +72,7 @@
   </div>
 
   <div class="card">
-    <div id="reader"></div>
+    <div id="reader"></div><div class="small" style="text-align:center;margin-top:8px;">For fastest detection, keep the QR flat, well lit, and fill most of the scan box.</div>
     <button id="startBtn" class="primary" onclick="startScanner()">Start Camera Scanner</button>
     <button id="stopBtn" class="secondary hidden" onclick="stopScanner()">Stop Camera</button>
   </div>
@@ -162,7 +162,7 @@ function handleScan(decodedText) {
   if (!isValidScanUrl(scanned)) {
     setStatus("❌ Not a valid ScanForSafe QR URL", "error");
     showResult("Rejected: " + scanned);
-    setTimeout(() => processing = false, 1200);
+    setTimeout(() => processing = false, 450);
     return;
   }
 
@@ -172,7 +172,7 @@ function handleScan(decodedText) {
     showExpected();
     setStatus("Heat-press saved. Now scan the KIDS BADGE QR.", "ready");
     showResult("Expected heat-press QR:<div class='url'>" + escapeHtml(expectedUrl) + "</div>");
-    setTimeout(() => processing = false, 700);
+    setTimeout(() => processing = false, 450);
     return;
   }
 
@@ -208,7 +208,7 @@ function handleScan(decodedText) {
     );
   }
 
-  setTimeout(() => processing = false, 1000);
+  setTimeout(() => processing = false, 450);
 }
 
 function processManual() {
@@ -226,9 +226,12 @@ async function startScanner() {
     await scanner.start(
       { facingMode: "environment" },
       {
-        fps: 12,
-        qrbox: { width: 260, height: 260 },
-        aspectRatio: 1.0
+        // Faster QR-only scanning for iPhone Safari.
+        fps: 20,
+        qrbox: { width: 300, height: 300 },
+        aspectRatio: 1.0,
+        disableFlip: true,
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
       },
       (decodedText) => handleScan(decodedText),
       () => {}
