@@ -30,7 +30,18 @@
   .ready { background: #fff7ed; color: #9a3412; }
   .success { background: #ecfdf5; color: #047857; }
   .error { background: #fef2f2; color: #b91c1c; }
-  #reader { width: 100%; overflow: hidden; border-radius: 14px; }
+  #cameraCard { position: relative; }
+  #reader { width:100%; overflow:hidden; border-radius:14px; background:#000; position:relative; min-height:330px; }
+  #reader video { width:100% !important; height:auto !important; display:block; object-fit:cover; }
+  .scan-overlay { position:absolute; inset:0; z-index:20; pointer-events:none; display:flex; align-items:center; justify-content:center; }
+  .scan-mask { position:absolute; inset:0; background:
+    linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,.72)) top/100% calc(50% - 150px) no-repeat,
+    linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,.72)) bottom/100% calc(50% - 150px) no-repeat,
+    linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,.72)) left/calc(50% - 150px) 300px no-repeat,
+    linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,.72)) right/calc(50% - 150px) 300px no-repeat; }
+  .scan-frame { width:300px; height:300px; border:3px solid #fff; border-radius:16px; box-shadow:0 0 0 2px rgba(0,0,0,.25),0 0 22px rgba(255,255,255,.22); }
+  .scan-hint { position:absolute; bottom:12px; left:12px; right:12px; color:#fff; background:rgba(0,0,0,.55); border-radius:10px; padding:8px 10px; text-align:center; font-size:12px; font-weight:600; }
+  .match-banner { background:#ecfdf5; color:#047857; border:2px solid #10b981; border-radius:16px; padding:20px 14px; text-align:center; font-size:24px; font-weight:800; margin-bottom:12px; }
   button {
     width: 100%; border: 0; border-radius: 12px; padding: 14px;
     font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer;
@@ -71,8 +82,14 @@
     <div class="small" style="text-align:center;">Successfully matched pairs — no fixed limit</div>
   </div>
 
-  <div class="card">
-    <div id="reader"></div><div class="small" style="text-align:center;margin-top:8px;">For fastest detection, keep the QR flat, well lit, and fill most of the scan box.</div>
+  <div id="cameraCard" class="card">
+    <div id="reader">
+      <div id="scanOverlay" class="scan-overlay hidden">
+        <div class="scan-mask"></div><div class="scan-frame"></div>
+        <div class="scan-hint">Place the QR inside the white square</div>
+      </div>
+    </div>
+    <div class="small" style="text-align:center;margin-top:8px;">Keep the QR flat, well lit, and fill most of the white square.</div>
     <button id="startBtn" class="primary" onclick="startScanner()">Start Camera Scanner</button>
     <button id="stopBtn" class="secondary hidden" onclick="stopScanner()">Stop Camera</button>
   </div>
@@ -155,62 +172,49 @@ function showExpected() {
 function handleScan(decodedText) {
   if (processing) return;
   processing = true;
-
   const scanned = normalizeUrl(decodedText);
 
-  // QR must be the ScanForSafe URL. No OCR and no code extraction.
   if (!isValidScanUrl(scanned)) {
     setStatus("❌ Not a valid ScanForSafe QR URL", "error");
-    showResult("Rejected: " + scanned);
-    setTimeout(() => processing = false, 450);
+    showResult("Rejected: " + escapeHtml(scanned));
+    setTimeout(() => processing = false, 250);
     return;
   }
 
   if (!expectedUrl) {
-    // First scan = heat-press label.
     expectedUrl = scanned;
     showExpected();
     setStatus("Heat-press saved. Now scan the KIDS BADGE QR.", "ready");
     showResult("Expected heat-press QR:<div class='url'>" + escapeHtml(expectedUrl) + "</div>");
-    setTimeout(() => processing = false, 450);
+    setTimeout(() => processing = false, 250);
     return;
   }
 
-  // Second scan = kids badge. Exact complete URL comparison.
   if (scanned === expectedUrl) {
     matched++;
     document.getElementById("matched").textContent = matched;
     localStorage.setItem("sfs_matched", matched);
 
-    const item = {
-      time: new Date().toLocaleString(),
-      url: expectedUrl
-    };
-    history.unshift(item);
-    history = history.slice(0, 10000);
+    history.unshift({time:new Date().toLocaleString(), url:expectedUrl});
+    history = history.slice(0,10000);
     localStorage.setItem("sfs_history", JSON.stringify(history));
     renderHistory();
 
-    setStatus("✅ MATCH — pair completed. Scan the NEXT heat-press label.", "success");
-    showResult(
-      "<div class='ok'>MATCHED</div>" +
-      "<div class='url'>" + escapeHtml(expectedUrl) + "</div>"
-    );
-
-    // Automatically prepare for the next heat-press label.
+    // Stop camera immediately and remove the scanner UI after a match.
+    stopScanner();
+    setStatus("✅ MATCH — pair completed.", "success");
+    showMatchResult(expectedUrl);
     expectedUrl = null;
     showExpected();
-  } else {
-    setStatus("❌ NO MATCH — scan the correct kids badge again.", "error");
-    showResult(
-      "<strong>Expected:</strong><div class='url'>" + escapeHtml(expectedUrl) + "</div>" +
-      "<strong>Scanned:</strong><div class='url'>" + escapeHtml(scanned) + "</div>"
-    );
+    setTimeout(() => processing = false, 250);
+    return;
   }
 
-  setTimeout(() => processing = false, 450);
+  setStatus("❌ NO MATCH — scan the correct kids badge again.", "error");
+  showResult("<strong>Expected:</strong><div class='url'>" + escapeHtml(expectedUrl) + "</div>" +
+             "<strong>Scanned:</strong><div class='url'>" + escapeHtml(scanned) + "</div>");
+  setTimeout(() => processing = false, 250);
 }
-
 function processManual() {
   const value = document.getElementById("manualInput").value;
   document.getElementById("manualInput").value = "";
@@ -219,48 +223,53 @@ function processManual() {
 
 async function startScanner() {
   if (scannerRunning) return;
-
   scanner = new Html5Qrcode("reader");
-
   try {
     await scanner.start(
-      { facingMode: "environment" },
-      {
-        // Faster QR-only scanning for iPhone Safari.
-        fps: 20,
-        qrbox: { width: 300, height: 300 },
-        aspectRatio: 1.0,
-        disableFlip: true,
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-      },
-      (decodedText) => handleScan(decodedText),
+      {facingMode:"environment", width:{ideal:1280}, height:{ideal:720}},
+      {fps:20, qrbox:{width:300,height:300}, aspectRatio:1.0, disableFlip:true,
+       formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE]},
+      decodedText => handleScan(decodedText),
       () => {}
     );
-
-    scannerRunning = true;
+    scannerRunning=true;
     document.getElementById("startBtn").classList.add("hidden");
     document.getElementById("stopBtn").classList.remove("hidden");
-    setStatus(
-      expectedUrl
-        ? "Scan the KIDS BADGE QR"
-        : "Scan the HEAT-PRESS QR",
-      expectedUrl ? "ready" : "waiting"
-    );
-  } catch (err) {
+    document.getElementById("scanOverlay").classList.remove("hidden");
+    setStatus(expectedUrl ? "Scan the KIDS BADGE QR" : "Scan the HEAT-PRESS QR",
+              expectedUrl ? "ready" : "waiting");
+  } catch(err) {
     setStatus("Camera could not start. Allow camera permission in Safari.", "error");
-    showResult("Camera error: " + err);
+    showResult("Camera error: " + escapeHtml(err));
+    try { scanner.clear(); } catch(e) {}
+    scanner=null;
   }
 }
-
 async function stopScanner() {
-  if (!scanner || !scannerRunning) return;
-  try {
-    await scanner.stop();
-    scanner.clear();
-  } catch (e) {}
-  scannerRunning = false;
+  if (scanner && scannerRunning) {
+    try { await scanner.stop(); } catch(e) {}
+    try { scanner.clear(); } catch(e) {}
+  }
+  scannerRunning=false;
   document.getElementById("startBtn").classList.remove("hidden");
   document.getElementById("stopBtn").classList.add("hidden");
+  document.getElementById("scanOverlay").classList.add("hidden");
+}
+function showMatchResult(url) {
+  const card=document.getElementById("resultCard");
+  card.classList.remove("hidden");
+  document.getElementById("resultText").innerHTML =
+    "<div class='match-banner'>✅ MATCHED</div>" +
+    "<div class='url'>" + escapeHtml(url) + "</div>" +
+    "<div class='small' style='text-align:center;margin-top:8px;'>Camera stopped. Pair saved successfully.</div>";
+  document.getElementById("nextScanBtn").classList.remove("hidden");
+}
+
+function startNextScan() {
+  document.getElementById("nextScanBtn").classList.add("hidden");
+  document.getElementById("resultCard").classList.add("hidden");
+  setStatus("Scan the NEXT HEAT-PRESS QR", "waiting");
+  startScanner();
 }
 
 function resetPair() {
@@ -273,6 +282,7 @@ function resetPair() {
 function showResult(html) {
   document.getElementById("resultCard").classList.remove("hidden");
   document.getElementById("resultText").innerHTML = html;
+  document.getElementById("nextScanBtn").classList.add("hidden");
 }
 
 function renderHistory() {
