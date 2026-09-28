@@ -2,100 +2,63 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#f5f6f8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f5f7">
 <title>ScanForSafe QR Pair Scanner</title>
-
-<!-- QR scanner: camera + QR decoding -->
 <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
-
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  background:#f4f5f7;
-  color:#101828;
-}
-.wrap{max-width:760px;margin:0 auto;padding:22px 14px 40px}
-h1{font-size:30px;line-height:1.08;margin:0 0 8px;font-weight:800}
-.sub{font-size:17px;line-height:1.35;color:#667085;margin:0 0 18px;font-weight:600}
-.card{
-  background:#fff;border-radius:24px;padding:18px;margin:14px 0;
-  box-shadow:0 5px 20px rgba(16,24,40,.07);
-}
-.status{
-  border-radius:18px;padding:16px;text-align:center;font-weight:800;
-  font-size:18px;line-height:1.25;background:#fff4e5;color:#8a4b08;
-}
+body{margin:0;background:#f4f5f7;color:#101828;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:20px 14px 40px}
+h1{font-size:30px;line-height:1.08;margin:0 0 8px;font-weight:900}
+.sub{font-size:17px;line-height:1.35;color:#667085;margin:0 0 16px;font-weight:650}
+.card{background:#fff;border-radius:24px;padding:18px;margin:14px 0;box-shadow:0 5px 20px rgba(16,24,40,.07)}
+.status{border-radius:18px;padding:15px;text-align:center;font-weight:850;font-size:18px;line-height:1.25;background:#fff4e5;color:#8a4b08}
 .status.good{background:#eaf8ef;color:#147a3e}
 .status.bad{background:#fff0f0;color:#b42318}
-.count{text-align:center}
-.count-num{font-size:52px;font-weight:900;line-height:1}
-.count-label{margin-top:5px;color:#667085;font-weight:700}
-.camera-card{padding:12px}
-.camera{
-  position:relative;width:100%;aspect-ratio:3/4;max-height:72vh;
-  overflow:hidden;border-radius:22px;background:#000;
-}
-#qr-video{
-  width:100%;height:100%;display:block;object-fit:cover;
-}
-.frame{
-  position:absolute;left:50%;top:50%;width:min(28vw,145px);height:min(28vw,145px);
-  transform:translate(-50%,-50%);border:3px solid #fff;border-radius:14px;
-  box-shadow:0 0 0 100vmax rgba(0,0,0,.55);
-  pointer-events:none;
-}
-.frame:before,.frame:after{
-  content:"";position:absolute;inset:-3px;border-radius:14px;
-  border:4px solid transparent;
-}
-.help{text-align:center;color:#667085;font-size:14px;font-weight:700;margin:12px 4px 2px}
-button{
-  width:100%;border:0;border-radius:16px;padding:15px 18px;
-  font-size:17px;font-weight:800;cursor:pointer;
-}
-.primary{background:#101828;color:#fff}
-.secondary{background:#eef2f6;color:#101828;margin-top:10px}
+.count{text-align:center}.count-num{font-size:52px;font-weight:900;line-height:1}.count-label{margin-top:5px;color:#667085;font-weight:700}
+.camera-card{padding:12px}.camera{position:relative;width:100%;aspect-ratio:3/4;max-height:72vh;overflow:hidden;border-radius:22px;background:#000}
+#qr-video{width:100%;height:100%;object-fit:cover;display:block}
+.frame{position:absolute;width:26%;aspect-ratio:1;left:37%;top:37%;border:3px solid #fff;border-radius:15px;box-shadow:0 0 0 9999px rgba(0,0,0,.38);pointer-events:none}
+.help{text-align:center;color:#667085;font-weight:700;font-size:14px;padding:10px 4px 2px}
+button{width:100%;border:0;border-radius:18px;padding:15px;font-size:17px;font-weight:900;cursor:pointer}
+.primary{background:#101828;color:#fff}.secondary{background:#edf1f7;color:#101828}
+.input-title{font-size:20px;font-weight:900;margin-bottom:8px}
+.input-row{display:flex;gap:8px}
+input{width:100%;min-width:0;border:2px solid #d0d5dd;border-radius:15px;padding:14px;font-size:16px;outline:none}
+input:focus{border-color:#667085}
+.input-row button{width:145px;flex:none;background:#101828;color:#fff}
+.result{font-size:14px;line-height:1.4;word-break:break-all}
 .hidden{display:none!important}
-.result{font-size:15px;word-break:break-all;background:#f8fafc;padding:12px;border-radius:12px;margin-top:10px}
-.row{display:flex;gap:10px}
-.row button{flex:1}
-.history-item{
-  padding:13px 0;border-bottom:1px solid #eaecf0;
-}
-.history-item:last-child{border-bottom:0}
-.small{font-size:12px;color:#667085;word-break:break-all}
-.match{font-weight:800;margin-bottom:5px}
+.compare-label{font-size:12px;font-weight:850;color:#667085;margin-top:12px}
+.compare-url{font-size:13px;line-height:1.4;word-break:break-all;margin-top:4px}
+.same{color:#147a3e;font-weight:900}.different{color:#b42318;font-weight:900}
+.history-item{padding:12px 0;border-bottom:1px solid #eaecf0}.match{font-weight:850}.small{font-size:12px;color:#667085;word-break:break-all;margin-top:3px}
 .empty{text-align:center;color:#98a2b3;padding:12px}
-#heatPressDisplay,#kidsBadgeDisplay{font-size:13px;line-height:1.35;word-break:break-all}
-.compare-same{color:#147a3e}
-.compare-different{color:#b42318}
 </style>
 </head>
-
 <body>
 <div class="wrap">
   <h1>ScanForSafe QR Pair Scanner</h1>
   <p class="sub">Heat-press label → Kids badge → exact QR URL comparison</p>
 
-  <div id="status" class="status">
-    Ready. Scan the HEAT-PRESS QR first.
-  </div>
+  <div id="status" class="status">Ready. Scan the HEAT-PRESS QR first.</div>
 
   <div class="card count">
     <div id="count" class="count-num">0</div>
-    <div class="count-label">Matched pairs</div>
+    <div class="count-label">Matched pairs — no fixed limit</div>
   </div>
 
   <div id="compareCard" class="card hidden">
-    <div style="font-size:20px;font-weight:900;margin-bottom:10px">Current QR Comparison</div>
-    <div style="font-size:13px;font-weight:800;color:#667085;margin-bottom:4px">HEAT-PRESS URL — LOCKED</div>
-    <div id="heatPressDisplay" class="result"></div>
-    <div id="kidsBadgeLabel" class="hidden" style="font-size:13px;font-weight:800;color:#667085;margin:12px 0 4px">CURRENT KIDS BADGE URL</div>
-    <div id="kidsBadgeDisplay" class="result hidden"></div>
-    <div id="compareResult" style="font-weight:900;margin-top:10px"></div>
+    <div style="font-size:20px;font-weight:900">Current URL Comparison</div>
+
+    <div class="compare-label">HEAT-PRESS URL — LOCKED</div>
+    <div id="heatUrl" class="compare-url"></div>
+
+    <div class="compare-label">CURRENT KIDS BADGE URL</div>
+    <div id="kidsUrl" class="compare-url"></div>
+
+    <div id="compareResult" style="margin-top:10px;font-size:16px"></div>
   </div>
 
   <div id="cameraCard" class="card camera-card">
@@ -103,14 +66,25 @@ button{
       <video id="qr-video" playsinline muted></video>
       <div class="frame"></div>
     </div>
-    <div class="help" id="cameraHelp">
-      Keep the QR inside the small white square.
+    <div class="help">Keep the QR completely inside the small white square.</div>
+    <button id="stopBtn" class="secondary">Stop Camera</button>
+  </div>
+
+  <div class="card">
+    <div class="input-title">Manual QR URL / code</div>
+    <div class="input-row">
+      <input id="manualInput" type="text" autocomplete="off"
+             placeholder="Paste the complete QR URL here">
+      <button id="manualBtn">Process QR</button>
+    </div>
+    <div style="font-size:12px;color:#667085;margin-top:8px">
+      This is a backup/testing input. A scanned QR automatically appears here too.
     </div>
   </div>
 
   <div id="resultCard" class="card hidden">
     <div id="resultTitle" style="font-size:24px;font-weight:900;text-align:center"></div>
-    <div id="resultText" class="result"></div>
+    <div id="resultText" class="result" style="margin-top:12px"></div>
     <button id="nextBtn" class="primary" style="margin-top:14px">Scan Next Heat-Press</button>
   </div>
 
@@ -122,270 +96,151 @@ button{
 </div>
 
 <script>
-/*
-  IMPORTANT WORKFLOW
+const video=document.getElementById('qr-video');
+const statusEl=document.getElementById('status');
+const countEl=document.getElementById('count');
+const cameraCard=document.getElementById('cameraCard');
+const resultCard=document.getElementById('resultCard');
+const resultTitle=document.getElementById('resultTitle');
+const resultText=document.getElementById('resultText');
+const nextBtn=document.getElementById('nextBtn');
+const stopBtn=document.getElementById('stopBtn');
+const manualInput=document.getElementById('manualInput');
+const manualBtn=document.getElementById('manualBtn');
+const historyEl=document.getElementById('history');
+const clearHistory=document.getElementById('clearHistory');
+const compareCard=document.getElementById('compareCard');
+const heatUrlEl=document.getElementById('heatUrl');
+const kidsUrlEl=document.getElementById('kidsUrl');
+const compareResult=document.getElementById('compareResult');
 
-  1. First QR detected = HEAT-PRESS URL.
-  2. Second/subsequent QR detected = KIDS BADGE URL.
-  3. Only an EXACT string match creates a pair.
-  4. A different Kids Badge QR does NOT replace the Heat-Press.
-  5. Only an exact match increments the matched count.
-  6. After a match, the camera is stopped and hidden.
-*/
+let scanner=null,scanning=false,processing=false,heatPressUrl=null;
+let matchedPairs=[];
+try{matchedPairs=JSON.parse(localStorage.getItem('sfs_qr_pairs_v4')||'[]');if(!Array.isArray(matchedPairs))matchedPairs=[]}catch(e){matchedPairs=[]}
 
-const video = document.getElementById('qr-video');
-const statusEl = document.getElementById('status');
-const countEl = document.getElementById('count');
-const cameraCard = document.getElementById('cameraCard');
-const resultCard = document.getElementById('resultCard');
-const resultTitle = document.getElementById('resultTitle');
-const resultText = document.getElementById('resultText');
-const nextBtn = document.getElementById('nextBtn');
-const historyEl = document.getElementById('history');
-const clearHistoryBtn = document.getElementById('clearHistory');
-const compareCard = document.getElementById('compareCard');
-const heatPressDisplay = document.getElementById('heatPressDisplay');
-const kidsBadgeDisplay = document.getElementById('kidsBadgeDisplay');
-const kidsBadgeLabel = document.getElementById('kidsBadgeLabel');
-const compareResult = document.getElementById('compareResult');
-
-let scanner = null;
-let scanning = false;
-let processing = false;
-
-/* Current heat-press target. It is NOT changed by a mismatching Kids Badge. */
-let heatPressUrl = null;
-
-let matchedPairs = [];
-try {
-  matchedPairs = JSON.parse(localStorage.getItem('sfs_qr_pairs_v3') || '[]');
-  if (!Array.isArray(matchedPairs)) matchedPairs = [];
-} catch(e) {
-  matchedPairs = [];
-}
-
-function saveHistory(){
-  localStorage.setItem('sfs_qr_pairs_v3', JSON.stringify(matchedPairs));
-}
-
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function save(){localStorage.setItem('sfs_qr_pairs_v4',JSON.stringify(matchedPairs))}
 function render(){
-  countEl.textContent = matchedPairs.length;
-
-  if (!matchedPairs.length){
-    historyEl.innerHTML = '<div class="empty">No matched pairs yet.</div>';
-    return;
-  }
-
-  historyEl.innerHTML = matchedPairs.slice().reverse().map((p,i) => `
+  countEl.textContent=matchedPairs.length;
+  historyEl.innerHTML=matchedPairs.length?matchedPairs.slice().reverse().map((p,i)=>`
     <div class="history-item">
-      <div class="match">✓ Match ${matchedPairs.length - i}</div>
-      <div class="small"><b>Heat-press:</b> ${escapeHtml(p.heatPress)}</div>
-      <div class="small"><b>Kids badge:</b> ${escapeHtml(p.kidsBadge)}</div>
-      <div class="small">${escapeHtml(p.time)}</div>
-    </div>
-  `).join('');
+      <div class="match">✓ Match ${matchedPairs.length-i}</div>
+      <div class="small"><b>Heat-press:</b> ${esc(p.heatPress)}</div>
+      <div class="small"><b>Kids badge:</b> ${esc(p.kidsBadge)}</div>
+      <div class="small">${esc(p.time)}</div>
+    </div>`).join(''):'<div class="empty">No matched pairs yet.</div>';
 }
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
-}
-
-function setStatus(text, type=''){
-  statusEl.textContent = text;
-  statusEl.className = 'status' + (type ? ' ' + type : '');
-}
-
-function showComparison(heatUrl, kidsUrl=null, resultText=''){
-  if (!heatUrl){
-    compareCard.classList.add('hidden');
-    return;
-  }
-
+function status(t,type=''){statusEl.textContent=t;statusEl.className='status'+(type?' '+type:'')}
+function showComparison(heat,kids,result){
+  if(!heat){compareCard.classList.add('hidden');return}
   compareCard.classList.remove('hidden');
-  heatPressDisplay.textContent = heatUrl;
-
-  if (kidsUrl !== null){
-    kidsBadgeLabel.classList.remove('hidden');
-    kidsBadgeDisplay.classList.remove('hidden');
-    kidsBadgeDisplay.textContent = kidsUrl;
-  } else {
-    kidsBadgeLabel.classList.add('hidden');
-    kidsBadgeDisplay.classList.add('hidden');
-    kidsBadgeDisplay.textContent = '';
-  }
-
-  compareResult.textContent = resultText;
-  compareResult.className =
-    resultText === 'EXACT MATCH' ? 'compare-same' :
-    resultText === 'NOT A MATCH' ? 'compare-different' : '';
+  heatUrlEl.textContent=heat;
+  kidsUrlEl.textContent=kids||'Waiting for Kids Badge QR...';
+  compareResult.textContent=result||'';
+  compareResult.className=result==='EXACT MATCH'?'same':result==='NOT A MATCH'?'different':'';
 }
-
-function showCamera(){
-  cameraCard.classList.remove('hidden');
-  resultCard.classList.add('hidden');
-}
-
-function hideCamera(){
-  cameraCard.classList.add('hidden');
-}
-
+function showCamera(){cameraCard.classList.remove('hidden');resultCard.classList.add('hidden')}
+function hideCamera(){cameraCard.classList.add('hidden')}
 async function stopScanner(){
-  if (!scanner) return;
-  try {
-    if (scanning) await scanner.stop();
-  } catch(e) {
-    console.log('Scanner stop:', e);
+  if(scanner){
+    try{await scanner.stop()}catch(e){}
   }
-  scanning = false;
+  scanning=false;
 }
-
 async function startScanner(){
   showCamera();
-  setStatus(
-    heatPressUrl
-      ? 'Heat-press saved. Now scan the KIDS BADGE QR.'
-      : 'Ready. Scan the HEAT-PRESS QR first.'
-  );
-
-  if (!scanner){
-    scanner = new QrScanner(
-      video,
-      result => {
-        const text = typeof result === 'string' ? result : result.data;
-        handleQr(text);
-      },
-      {
-        preferredCamera: 'environment',
-        maxScansPerSecond: 20,
-        returnDetailedScanResult: true,
-        highlightScanRegion: false,
-        highlightCodeOutline: false,
-        calculateScanRegion: video => {
-          /*
-            Smaller real scan area than the previous version.
-            We scan the centered 32% square, then downscale to 320x320.
-          */
-          const side = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.32);
-          const x = Math.floor((video.videoWidth - side) / 2);
-          const y = Math.floor((video.videoHeight - side) / 2);
-          return {
-            x, y,
-            width: side,
-            height: side,
-            downScaledWidth: 320,
-            downScaledHeight: 320
-          };
-        }
+  if(!scanner){
+    scanner=new QrScanner(video,r=>{
+      const text=typeof r==='string'?r:r.data;
+      handleQr(text);
+    },{
+      preferredCamera:'environment',
+      maxScansPerSecond:25,
+      returnDetailedScanResult:true,
+      highlightScanRegion:false,
+      highlightCodeOutline:false,
+      calculateScanRegion:v=>{
+        const side=Math.floor(Math.min(v.videoWidth,v.videoHeight)*0.26);
+        return{
+          x:Math.floor((v.videoWidth-side)/2),
+          y:Math.floor((v.videoHeight-side)/2),
+          width:side,height:side,
+          downScaledWidth:420,downScaledHeight:420
+        };
       }
-    );
+    });
   }
-
-  try {
-    await scanner.start();
-    scanning = true;
-  } catch(err){
-    scanning = false;
-    setStatus('Camera could not start. Check iPhone camera permission and reload the page.','bad');
-    console.error(err);
-  }
+  try{await scanner.start();scanning=true;status(heatPressUrl?'Heat-press saved. Scan the KIDS BADGE QR.':'Ready. Scan the HEAT-PRESS QR first.')}
+  catch(e){status('Camera could not start. Check camera permission and reload.','bad')}
 }
-
 async function handleQr(text){
-  if (processing || !text) return;
-  processing = true;
-
-  const qr = String(text).trim();
-
-  /*
-    Small delay prevents the same QR being delivered multiple times
-    by consecutive camera frames.
-  */
+  if(processing||!text)return;
+  processing=true;
+  const qr=String(text).trim();
+  manualInput.value=qr;
   await stopScanner();
+  await processQr(qr);
+}
+async function processQr(qr){
+  qr=String(qr||'').trim();
+  if(!qr){processing=false;status('Enter or scan a QR URL/code first.','bad');return}
 
-  if (!heatPressUrl){
-    /* FIRST SCAN = HEAT-PRESS ONLY */
-    heatPressUrl = qr;
-
-    showComparison(heatPressUrl, null, 'Waiting for Kids Badge');
-    setStatus('Heat-press saved. Now scan the KIDS BADGE QR.','good');
-
-    /*
-      Restart immediately for the Kids Badge.
-      The heat-press URL stays locked until an exact match.
-    */
-    processing = false;
+  if(!heatPressUrl){
+    heatPressUrl=qr;
+    showComparison(heatPressUrl,null,'WAITING FOR KIDS BADGE');
+    status('Heat-press saved. Now scan the KIDS BADGE QR.','good');
+    processing=false;
     await startScanner();
     return;
   }
 
-  /* SECOND / LATER SCANS = KIDS BADGE */
-  if (qr === heatPressUrl){
-    /* EXACT MATCH ONLY */
-    matchedPairs.push({
-      heatPress: heatPressUrl,
-      kidsBadge: qr,
-      time: new Date().toLocaleString()
-    });
-    saveHistory();
-    render();
-
-    showComparison(heatPressUrl, qr, 'EXACT MATCH');
-
-    resultTitle.textContent = '✅ PAIR MATCHED';
-    resultText.innerHTML =
-      '<b>Heat-press URL</b><br>' + escapeHtml(heatPressUrl) +
-      '<br><br><b>Kids badge URL</b><br>' + escapeHtml(qr) +
+  if(qr===heatPressUrl){
+    matchedPairs.push({heatPress:heatPressUrl,kidsBadge:qr,time:new Date().toLocaleString()});
+    save();render();
+    showComparison(heatPressUrl,qr,'EXACT MATCH');
+    resultTitle.textContent='✅ PAIR MATCHED';
+    resultText.innerHTML='<b>Heat-press URL</b><br>'+esc(heatPressUrl)+
+      '<br><br><b>Kids badge URL</b><br>'+esc(qr)+
       '<br><br><b>Comparison:</b> EXACT MATCH';
-
-    setStatus('Match successful. Camera stopped.','good');
+    status('Match successful. Camera stopped.','good');
+    await stopScanner();
     hideCamera();
     resultCard.classList.remove('hidden');
-
-    /* Critical: no camera remains running after a match. */
-    processing = false;
-    heatPressUrl = null;
+    heatPressUrl=null;
+    manualInput.value='';
+    processing=false;
     return;
   }
 
-  /*
-    MISMATCH:
-    Do NOT count it.
-    Do NOT replace the heat-press.
-    Do NOT reset the workflow.
-    Continue waiting for the correct Kids Badge.
-  */
-  showComparison(heatPressUrl, qr, 'NOT A MATCH');
-  setStatus('❌ QR does NOT match this heat-press. Keep scanning the correct KIDS BADGE QR.','bad');
-
-  processing = false;
+  showComparison(heatPressUrl,qr,'NOT A MATCH');
+  status('❌ NOT A MATCH — Heat-press URL remains locked. Scan the correct KIDS BADGE.','bad');
+  processing=false;
   await startScanner();
 }
-
-nextBtn.addEventListener('click', async () => {
+manualBtn.addEventListener('click',async()=>{
+  if(processing)return;
+  processing=true;
+  const value=manualInput.value.trim();
   await stopScanner();
-
-  heatPressUrl = null;
+  await processQr(value);
+});
+manualInput.addEventListener('keydown',e=>{if(e.key==='Enter')manualBtn.click()});
+stopBtn.addEventListener('click',async()=>{await stopScanner();status('Camera stopped. Press Scan Next Heat-Press to start again.');});
+nextBtn.addEventListener('click',async()=>{
+  await stopScanner();
+  heatPressUrl=null;
+  manualInput.value='';
   showComparison(null);
   resultCard.classList.add('hidden');
-  showCamera();
-  setStatus('Ready. Scan the HEAT-PRESS QR first.');
-  processing = false;
+  status('Ready. Scan the HEAT-PRESS QR first.');
+  processing=false;
   await startScanner();
 });
-
-clearHistoryBtn.addEventListener('click', () => {
-  if (!confirm('Clear all matched-pair history?')) return;
-  matchedPairs = [];
-  saveHistory();
-  render();
+clearHistory.addEventListener('click',()=>{
+  if(!confirm('Clear all matched-pair history?'))return;
+  matchedPairs=[];save();render();
 });
-
-window.addEventListener('pagehide', () => {
-  stopScanner();
-});
-
+window.addEventListener('pagehide',stopScanner);
 render();
 startScanner();
 </script>
