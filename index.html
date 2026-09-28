@@ -225,10 +225,17 @@ async function startScanner() {
   if (scannerRunning) return;
   scanner = new Html5Qrcode("reader");
   try {
+    // Use the simplest iPhone-compatible camera request.
+    // The previous custom resolution constraints can fail on some iOS devices.
     await scanner.start(
-      {facingMode:"environment", width:{ideal:1280}, height:{ideal:720}},
-      {fps:20, qrbox:{width:300,height:300}, aspectRatio:1.0, disableFlip:true,
-       formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE]},
+      { facingMode: "environment" },
+      {
+        fps: 20,
+        qrbox: { width: 300, height: 300 },
+        aspectRatio: 1.0,
+        disableFlip: true,
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+      },
       decodedText => handleScan(decodedText),
       () => {}
     );
@@ -239,10 +246,14 @@ async function startScanner() {
     setStatus(expectedUrl ? "Scan the KIDS BADGE QR" : "Scan the HEAT-PRESS QR",
               expectedUrl ? "ready" : "waiting");
   } catch(err) {
-    setStatus("Camera could not start. Allow camera permission in Safari.", "error");
-    showResult("Camera error: " + escapeHtml(err));
+    const msg = err && err.message ? err.message : String(err);
+    setStatus("Camera could not start. Check browser camera permission.", "error");
+    showResult("<strong>Camera error:</strong><div class='url'>" + escapeHtml(msg) + "</div><div class='small' style='margin-top:8px;'>Make sure this site has Camera permission set to Allow, then reload the page.</div>");
     try { scanner.clear(); } catch(e) {}
     scanner=null;
+    scannerRunning=false;
+    document.getElementById("startBtn").classList.remove("hidden");
+    document.getElementById("stopBtn").classList.add("hidden");
   }
 }
 async function stopScanner() {
