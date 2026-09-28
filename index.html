@@ -42,7 +42,7 @@ h1{font-size:30px;line-height:1.08;margin:0 0 8px;font-weight:800}
   width:100%;height:100%;display:block;object-fit:cover;
 }
 .frame{
-  position:absolute;left:50%;top:50%;width:min(42vw,220px);height:min(42vw,220px);
+  position:absolute;left:50%;top:50%;width:min(28vw,145px);height:min(28vw,145px);
   transform:translate(-50%,-50%);border:3px solid #fff;border-radius:14px;
   box-shadow:0 0 0 100vmax rgba(0,0,0,.55);
   pointer-events:none;
@@ -223,9 +223,9 @@ async function startScanner(){
         calculateScanRegion: video => {
           /*
             Smaller real scan area than the previous version.
-            We scan the centered 42% square, then downscale to 320x320.
+            We scan the centered 32% square, then downscale to 320x320.
           */
-          const side = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.42);
+          const side = Math.floor(Math.min(video.videoWidth, video.videoHeight) * 0.32);
           const x = Math.floor((video.videoWidth - side) / 2);
           const y = Math.floor((video.videoHeight - side) / 2);
           return {
