@@ -69,6 +69,9 @@ button{
 .small{font-size:12px;color:#667085;word-break:break-all}
 .match{font-weight:800;margin-bottom:5px}
 .empty{text-align:center;color:#98a2b3;padding:12px}
+#heatPressDisplay,#kidsBadgeDisplay{font-size:13px;line-height:1.35;word-break:break-all}
+.compare-same{color:#147a3e}
+.compare-different{color:#b42318}
 </style>
 </head>
 
@@ -84,6 +87,15 @@ button{
   <div class="card count">
     <div id="count" class="count-num">0</div>
     <div class="count-label">Matched pairs</div>
+  </div>
+
+  <div id="compareCard" class="card hidden">
+    <div style="font-size:20px;font-weight:900;margin-bottom:10px">Current QR Comparison</div>
+    <div style="font-size:13px;font-weight:800;color:#667085;margin-bottom:4px">HEAT-PRESS URL — LOCKED</div>
+    <div id="heatPressDisplay" class="result"></div>
+    <div id="kidsBadgeLabel" class="hidden" style="font-size:13px;font-weight:800;color:#667085;margin:12px 0 4px">CURRENT KIDS BADGE URL</div>
+    <div id="kidsBadgeDisplay" class="result hidden"></div>
+    <div id="compareResult" style="font-weight:900;margin-top:10px"></div>
   </div>
 
   <div id="cameraCard" class="card camera-card">
@@ -131,6 +143,11 @@ const resultText = document.getElementById('resultText');
 const nextBtn = document.getElementById('nextBtn');
 const historyEl = document.getElementById('history');
 const clearHistoryBtn = document.getElementById('clearHistory');
+const compareCard = document.getElementById('compareCard');
+const heatPressDisplay = document.getElementById('heatPressDisplay');
+const kidsBadgeDisplay = document.getElementById('kidsBadgeDisplay');
+const kidsBadgeLabel = document.getElementById('kidsBadgeLabel');
+const compareResult = document.getElementById('compareResult');
 
 let scanner = null;
 let scanning = false;
@@ -178,6 +195,31 @@ function escapeHtml(s){
 function setStatus(text, type=''){
   statusEl.textContent = text;
   statusEl.className = 'status' + (type ? ' ' + type : '');
+}
+
+function showComparison(heatUrl, kidsUrl=null, resultText=''){
+  if (!heatUrl){
+    compareCard.classList.add('hidden');
+    return;
+  }
+
+  compareCard.classList.remove('hidden');
+  heatPressDisplay.textContent = heatUrl;
+
+  if (kidsUrl !== null){
+    kidsBadgeLabel.classList.remove('hidden');
+    kidsBadgeDisplay.classList.remove('hidden');
+    kidsBadgeDisplay.textContent = kidsUrl;
+  } else {
+    kidsBadgeLabel.classList.add('hidden');
+    kidsBadgeDisplay.classList.add('hidden');
+    kidsBadgeDisplay.textContent = '';
+  }
+
+  compareResult.textContent = resultText;
+  compareResult.className =
+    resultText === 'EXACT MATCH' ? 'compare-same' :
+    resultText === 'NOT A MATCH' ? 'compare-different' : '';
 }
 
 function showCamera(){
@@ -266,6 +308,7 @@ async function handleQr(text){
     /* FIRST SCAN = HEAT-PRESS ONLY */
     heatPressUrl = qr;
 
+    showComparison(heatPressUrl, null, 'Waiting for Kids Badge');
     setStatus('Heat-press saved. Now scan the KIDS BADGE QR.','good');
 
     /*
@@ -288,10 +331,13 @@ async function handleQr(text){
     saveHistory();
     render();
 
+    showComparison(heatPressUrl, qr, 'EXACT MATCH');
+
     resultTitle.textContent = '✅ PAIR MATCHED';
     resultText.innerHTML =
       '<b>Heat-press URL</b><br>' + escapeHtml(heatPressUrl) +
-      '<br><br><b>Kids badge URL</b><br>' + escapeHtml(qr);
+      '<br><br><b>Kids badge URL</b><br>' + escapeHtml(qr) +
+      '<br><br><b>Comparison:</b> EXACT MATCH';
 
     setStatus('Match successful. Camera stopped.','good');
     hideCamera();
@@ -310,6 +356,7 @@ async function handleQr(text){
     Do NOT reset the workflow.
     Continue waiting for the correct Kids Badge.
   */
+  showComparison(heatPressUrl, qr, 'NOT A MATCH');
   setStatus('❌ QR does NOT match this heat-press. Keep scanning the correct KIDS BADGE QR.','bad');
 
   processing = false;
@@ -320,6 +367,7 @@ nextBtn.addEventListener('click', async () => {
   await stopScanner();
 
   heatPressUrl = null;
+  showComparison(null);
   resultCard.classList.add('hidden');
   showCamera();
   setStatus('Ready. Scan the HEAT-PRESS QR first.');
